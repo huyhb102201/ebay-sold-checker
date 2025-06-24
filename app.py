@@ -1,45 +1,22 @@
 from flask import Flask, request, render_template, jsonify
-import undetected_chromedriver as uc
-from openpyxl import Workbook, load_workbook
-import re, time, os
+import requests, re
 
 app = Flask(__name__)
 
 def get_sold_quantity(url):
-    options = uc.ChromeOptions()
-    options.headless = True
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument("--log-level=3")
-    prefs = {
-        "profile.managed_default_content_settings.images": 2,
-        "profile.managed_default_content_settings.stylesheets": 2,
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
     }
-    options.add_experimental_option("prefs", prefs)
-
-    driver = uc.Chrome(options=options)
-    driver.get(url)
-    time.sleep(3)
-    html = driver.page_source
-    driver.quit()
-
-    match = re.search(r"(\d+)\s+sold", html)
-    return match.group(1) if match else "Không tìm thấy"
-
-def write_to_excel(url, sold):
-    filename = "data.xlsx"
-    if not os.path.exists(filename):
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "eBay Data"
-        ws.append(["URL", "Sold Quantity"])
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        html = response.text
+        match = re.search(r'(\d[\d,]*)\s+sold', html, re.IGNORECASE)
+        if match:
+            return match.group(1).replace(',', '')
+        else:
+            return "Không tìm thấy"
     else:
-        wb = load_workbook(filename)
-        ws = wb.active
-    ws.append([url, sold])
-    wb.save(filename)
+        return f"Lỗi: {response.status_code}"
 
 @app.route("/")
 def index():
@@ -49,15 +26,8 @@ def index():
 def check():
     data = request.get_json()
     url = data.get("ebay_url")
-    try:
-        sold = get_sold_quantity(url)
-        write_to_excel(url, sold)
-        return jsonify({"sold": sold})
-    except Exception as e:
-        return jsonify({"sold": f"Lỗi: {str(e)}"})
+    sold = get_sold_quantity(url)
+    return jsonify({"sold": sold})
 
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=False, host="0.0.0.0", port=port)
-
+    app.run(debug=True)

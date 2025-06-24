@@ -1,3 +1,2 @@
-flask
-undetected-chromedriver
-openpyxl
+Flask
+requests
