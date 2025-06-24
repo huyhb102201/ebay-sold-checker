@@ -29,6 +29,5 @@ def check():
     sold = get_sold_quantity(url)
     return jsonify({"sold": sold})
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+
 
