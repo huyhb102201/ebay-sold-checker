@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Check eBay Sold</title>
+  <script>
+    let urlIndex = 1;
+
+    function addInput() {
+      urlIndex++;
+      const div = document.createElement("div");
+      div.innerHTML = `<input type="text" class="ebay_url" placeholder="Paste eBay link here" style="width: 400px;" oninput="autoCheck(this, ${urlIndex})">
+                       <p id="sold${urlIndex}"></p>`;
+      document.getElementById("form-area").appendChild(div);
+    }
+
+    async function autoCheck(inputElem, index) {
+      const url = inputElem.value;
+      const soldElem = document.getElementById(`sold${index}`);
+      if (!url.includes("ebay.com")) {
+        soldElem.innerText = "";
+        return;
+      }
+
+      soldElem.innerText = "Đang kiểm tra...";
+
+      const response = await fetch("/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ebay_url: url })
+      });
+
+      const data = await response.json();
+      soldElem.innerText = "Đã bán: " + data.sold;
+    }
+  </script>
+</head>
+<body>
+  <h1>Check eBay Sold</h1>
+  <div id="form-area">
+    <div>
+      <input type="text" class="ebay_url" placeholder="Paste eBay link here" style="width: 400px;" oninput="autoCheck(this, 1)">
+      <p id="sold1"></p>
+    </div>
+  </div>
+  <button onclick="addInput()">➕ Add URL</button>
+</body>
+</html>
